@@ -5,16 +5,26 @@ import java.awt.GridLayout;
 import java.awt.*;
 import java.awt.event.*;
 
-public class Board extends JPanel implements KeyListener
+public class Board extends JPanel implements KeyListener,Output
 {
-    Cell[][] board,solution;
     static Game parent;
-    int Currx,Curry;
-    boolean check;
 
-    public Board(Game g,int NumofHoles)
-    {
-        Currx = 0; Curry = 0;
+    // Consts import
+    int BOARDSIZE = DEF.BOARD_SIZE;
+    int CELLSIZE = DEF.CELL_SIZE;
+
+    Cell[][] board;
+    Cell[][] solution;
+    
+    int Currx;
+    int Curry;
+
+    boolean check;
+    
+    // constructor, empty board
+    public Board(Game g, int NumofHoles){
+        
+        Currx = 0; Curry = 0; 
         check = false;
 
         setBackground(Color.black);
@@ -23,78 +33,171 @@ public class Board extends JPanel implements KeyListener
         BorderLayout map = new BorderLayout();
         this.setLayout(map);
 
-        GridLayout grid = new GridLayout(9,9);
+        GridLayout grid = new GridLayout(BOARDSIZE,BOARDSIZE);
         this.setLayout(grid);
 
-        board = new Cell[9][9];
+        board = new Cell[BOARDSIZE][BOARDSIZE];
         initBoard(board);
         
-        solution = new Cell[9][9];
+        solution = new Cell[BOARDSIZE][BOARDSIZE];
         initBoard(solution);
 
+        // creates a solution
         board = newBoard(0, 0, board);
-        CopyBoard(board, solution);
-        //creates a solution
 
-        board = CreateGame(NumofHoles, board);
-        //poke holes in the solution to create game
-
-        Print(board);
+        copyBoard(board, solution);
+        
+        // poke holes in the solution to create game
+        board = createGame(NumofHoles, board);
+        
         repaint();
     }
 
 
-    public static void initBoard(Cell[][] board)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                board[i][j] = new Cell(parent.gameBoard);
-            } 
+    // main Board and Game creation methods :
+
+    // recursive function to create a random board
+    public Cell[][] newBoard(int x, int y, Cell[][] board) {
+
+        // Stop condition
+        if (x == BOARDSIZE){
+            return board;
         }
+
+        // Dead End
+        if (deadEnd(board)){
+            return null;
+        }
+
+        // create a new Board for recursion
+        Cell[][] aux = new Cell[BOARDSIZE][BOARDSIZE];
+        initBoard(aux);
+        copyBoard(board, aux);
+
+        // also Dead End option
+        int num = randomInlay(x, y, board);
+        if (num == -1) {
+            return null;
+        }
+
+        // in lay random number in the new board
+        aux[x][y].fill(num);
+
+        // DeadEnd - backtracking
+        if (y == BOARDSIZE - 1) {
+            aux = newBoard(x + 1, 0, aux);
+        } else {
+            aux = newBoard(x, y + 1, aux);
+        }
+
+        if (aux == null) {
+            
+            board[x][y].Posibilities[num - 1] = false;
+            return newBoard(x, y, board);
+        } else board = aux;
+        
+        return board;
     }
-    //initiate Board
+    
+    // recursive function to find every legal solution
+    public int findAllSolutions(int x, int y, Cell[][] board) {
 
-    public static void Print(Cell[][] board)
-    {
-        System.out.println();
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                System.out.print("[" + board[i][j].num + "]") ;
-            }
-
-            System.out.println() ;
+        // Stop condition
+        if(boardSolved(board)){
+            return 1;
         }
         
-    }
-    //prints the board
+        // Dead End
+        if(deadEnd(board)){
+            return 0;
+        }
+        
+        // modification to allow the function to Solve incomplete boards
+        if(board[x][y].isPlaced){
 
-    public static boolean imPossible(Cell[][] board,int x,int y)
-    {
-        for(int i = 1 ; i < 10 ; i++)
-        {
-            if(isLegal(x, y, board, i))
-            {
+            if(y == BOARDSIZE - 1){
+                return findAllSolutions(x + 1, 0, board);
+            }
+            return findAllSolutions(x, y + 1, board);
+        }
+        
+        // create a new Board for recursion
+        Cell[][] aux = new Cell[BOARDSIZE][BOARDSIZE];
+        initBoard(aux);
+        copyBoard(board, aux);
+        
+        // number of solutions
+        int res = 0; 
+        
+        // try all possible numbers in board[x][y]
+        for(int num = 1 ; num < BOARDSIZE + 1 ; num++){
+
+            if(isLegal(x, y, aux, num)){
+
+                aux[x][y].fill(num);
+
+                if(y == BOARDSIZE - 1){
+                    res += findAllSolutions(x + 1, 0, aux);
+                }
+                else res += findAllSolutions(x, y + 1, aux);
+            }    
+        }
+
+        return res;
+    }
+    
+    // poke holes inside the solution board
+    public Cell[][] createGame(int NumofHoles, Cell[][] board) {
+        
+        // finished game board
+        if(NumofHoles == 0){
+
+            return board;
+        }
+        
+        Cell[][] aux = new Cell[BOARDSIZE][BOARDSIZE];
+        initBoard(aux);
+        copyBoard(board, aux);
+
+        int x = randomNum();
+        int y = randomNum();
+
+        aux[x][y].hole();
+
+        if(findAllSolutions(0, 0, aux) != 1){
+
+            return createGame(NumofHoles, board);
+        }
+        return createGame(NumofHoles - 1, aux);
+    }
+    
+
+    // method used to determine Board conditions :
+
+    // determines if there is any valid value possible in board[x][y]
+    public boolean impossible(Cell[][] board, int x, int y) {
+
+        for (int i = 1; i < BOARDSIZE + 1; i++) {
+
+            if (isLegal(x, y, board, i)) {
+
                 return false;
             }
         }
         return true;
     }
-    //returns true if any value valid in board[x][y]
 
-    public static boolean DeadEnd(Cell[][] board)
-    {
-        for(int i = 1 ; i < 10 ; i++)
-        {
-            for(int x = 0 ; x < 9 ; x++)
-            {
-                for(int y = 0 ; y < 9 ; y++)
-                {
-                    if(isLegal(x, y, board,i))
-                    {
+    // are there no more possibilities for board[x][y]?
+    public boolean deadEnd(Cell[][] board) {
+
+        for (int i = 1; i < BOARDSIZE + 1; i++) {
+
+            for (int x = 0; x < BOARDSIZE; x++) {
+
+                for (int y = 0; y < BOARDSIZE; y++) {
+
+                    if (isLegal(x, y, board, i)) {
+
                         return false;
                     }
                 }
@@ -102,208 +205,39 @@ public class Board extends JPanel implements KeyListener
         }
         return true;
     }
-    //are there no more possibilities for board[x][y]?
 
-    public static void CopyBoard(Cell[][] board,Cell[][] aux)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                aux[i][j].num = board[i][j].num;
-                aux[i][j].isPlaced = board[i][j].isPlaced;
-                for(int k = 0; k < 9; k++)
-                {
-                    aux[i][j].Posibilities[k] = board[i][j].Posibilities[k] ;
-                }
-            }
-        }
-    }
-    //auxilary function
+    // checks if there isnt the same number in row.column or square
+    public boolean isLegal(int x, int y, Cell[][] board, int num) {
 
-    public static void Dismiss(int x,int y,int num,Cell[][] board)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            if(i != y)
-            {
-                board[x][i].Posibilities[num - 1] = false ;
-            }
-            if(i != x)
-            {
-                board[i][y].Posibilities[num - 1] = false ;
-            }
-            
-            //dismiss rows and columns
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                if((i/3 == x/3 && j/3 == y/3) && (i != x && j != y))
-                {
-                    board[i][j].Posibilities[num - 1] = false;
-                }
-                //dismiss square
-            }
+        for (int i = 0; i < BOARDSIZE; i++) {
+
+            // check rows
+            if (board[x][i].num == num) {
+                return false;
+            } 
+
+            // check coloumns
+            if (board[i][y].num == num) {
+                return false;
+            } 
         }
-    }
-    //dismiss Cells options
-    
-    public static boolean isLegal(int x,int y,Cell [][] board,int num)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            if(board[x][i].num == num) {return false;}
-            if(board[i][y].num == num) {return false;}
-            //rows and columns
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                if((i/3 == x/3 && j/3 == y/3) && (i != x && j != y))
-                {
-                    if(board[i][j].num == num) {return false;}
-                }
-                //square
-            }
+
+        if (sameSquare(x, y, board, num)){
+            return false;
         }
 
         return board[x][y].isPossible(num);
     }
-    //checks if there isnt the same number in row.column or square
 
-    public static int RandomInlay(int x,int y,Cell[][] board)
-    {
-        Random r = new Random();
-        int num = r.nextInt(9) + 1;
+    // checks if the board is already solved
+    public boolean boardSolved(Cell[][] board) {
 
-        if(imPossible(board, x, y))
-        {
-            return -1;
-        }
+        for(int i = 0 ; i < BOARDSIZE ; i++){
 
-        while(!isLegal(x, y, board, num))
-        {
-            num = r.nextInt(9) + 1;
-        }
+            for(int j = 0 ; j < BOARDSIZE ; j++){
 
-        return num;
-    }
-    //legal random number generator
+                if(board[i][j].num == 0){
 
-    public static Cell[][] newBoard(int x,int y,Cell[][] board)
-    {
-        if(x == 9) 
-        {
-            return board;
-        }
-        //Stop condition
-
-        if(DeadEnd(board))
-        {
-            return null;
-        }
-        //Dead End
-
-        Cell[][] aux = new Cell[9][9];
-        initBoard(aux);
-        initBoard(aux);
-        CopyBoard(board, aux);
-        //create a new Board for recursion
-
-        int num = RandomInlay(x, y, board);
-        if(num == -1)
-        {
-            return null;
-        }
-        //also Dead End option
-
-        aux[x][y].Fill(num);
-        //in lay random number in the new board
-
-        if(y == 8)
-        {
-            aux = newBoard(x + 1, 0, aux);
-            if(aux == null)
-            {
-                board[x][y].Posibilities[num - 1] = false;
-                return newBoard(x, y,board);
-            }
-            else board = aux;
-        }
-        else
-        {
-            aux = newBoard(x, y + 1, aux);
-            if(aux == null)
-            {
-                board[x][y].Posibilities[num - 1] = false;
-                return newBoard(x, y, board);
-            }
-            else board = aux;
-        }
-        //DeadEnd - backtracking
-
-        return board;
-    }
-    //recursive function to create a random board
-
-    public static int findAllSolutions(int x,int y,Cell[][] board)
-    {
-        if(BoardSolved(board)) 
-        {
-            return 1;
-        }
-        //Stop condition
-
-        if(DeadEnd(board))
-        {
-            return 0;
-        }
-        //Dead End
-
-        if(board[x][y].isPlaced)
-        {
-            if(y == 8)
-            {
-                return findAllSolutions(x + 1, 0, board);
-            }
-            return findAllSolutions(x, y + 1, board);
-        }
-        //modification to allow the function to Solve incomplete boards
-
-        Cell[][] aux = new Cell[9][9];
-        initBoard(aux);
-        CopyBoard(board, aux);
-        //create a new Board for recursion
-
-        int res = 0; 
-        //number of solutions
-
-        for(int num = 1 ; num < 10 ; num++)
-        {
-            if(isLegal(x, y, aux, num))
-            {
-                aux[x][y].Fill(num);
-
-                if(y == 8)
-                {
-                    res += findAllSolutions(x + 1, 0, aux);
-                }
-                else res += findAllSolutions(x, y + 1, aux);
-            }
-            
-            
-        }
-        //try all possible numbers in board[x][y]
-
-        return res;
-    }
-    //recursive function to find every legal solution
-
-    public static boolean BoardSolved(Cell[][] board)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            for(int j = 0 ; j < 9 ; j++)
-            {
-                if(board[i][j].num == 0)
-                {
                     return false;
                 }
             } 
@@ -311,211 +245,281 @@ public class Board extends JPanel implements KeyListener
 
         return true;
     }
-    //checks if the board is already solved
 
-    public static Cell[][] CreateGame(int NumofHoles,Cell[][] board)
-    {
-        if(NumofHoles == 0)
-        {
-            return board;
+    // checks if there 2 identical number in the same sub square
+    public boolean sameSquare(int x, int y, Cell[][] board, int num) {
+
+        int k = (int) Math.sqrt(BOARDSIZE); 
+        
+        for (int i = 0 ; i < BOARDSIZE; i++){
+
+            for (int j = 0 ; j < BOARDSIZE; j++){
+            
+                if (i / k == x / k && j / k == y / k
+                    && ((i != x)||(j != y))){
+
+                        if (board[i][j].num == num
+                            && board[i][j].isPlaced){
+                                return true;
+                            }
+                    }
+            }
         }
-        //finished game board
-
-        Cell[][] aux = new Cell[9][9];
-        Board.initBoard(aux);
-        Board.CopyBoard(board, aux);
-
-        int x = RandomNum();
-        int y = RandomNum();
-
-        aux[x][y].Hole();
-
-        if(Board.findAllSolutions(0, 0, aux) != 1)
-        {
-            return CreateGame(NumofHoles, board);
-        }
-        return CreateGame(NumofHoles - 1, aux);
+        return false;
     }
-    //poke holes inside the solution board
+
     
-    public static int RandomNum()
-    {
+    // auxilary methods :
+
+    // initiate Board
+    public void initBoard(Cell[][] board) {
+        
+        for(int i = 0 ; i < BOARDSIZE ; i++){
+
+            for(int j = 0 ; j < BOARDSIZE ; j++){
+
+                board[i][j] = new Cell(parent.gameBoard, i, j);
+            } 
+        }
+    }
+
+    // auxilary function
+    public void copyBoard(Cell[][] board, Cell[][] aux) {
+
+        for (int i = 0; i < BOARDSIZE; i++) {
+
+            for (int j = 0; j < BOARDSIZE; j++) {
+
+                aux[i][j].num = board[i][j].num;
+                aux[i][j].isPlaced = board[i][j].isPlaced;
+
+                for (int k = 0; k < BOARDSIZE; k++) {
+
+                    aux[i][j].Posibilities[k] = board[i][j].Posibilities[k];
+                }
+            }
+        }
+    }
+
+    // prints the board
+    public void print(Cell[][] board) {
+
+        System.out.println();
+        for (int i = 0; i < BOARDSIZE; i++) {
+
+            for (int j = 0; j < BOARDSIZE; j++) {
+
+                System.out.print("[" + board[i][j].num + "]");
+            }
+
+            System.out.println();
+        }
+
+    }
+
+    // random number generator
+    public int randomNum() {
+
         Random r = new Random();
-        int num = r.nextInt(9);
+        int num = r.nextInt(BOARDSIZE);
 
         return num;
     }
-    //random number generator
 
-    public synchronized void paintComponent(Graphics g)
-	{
-		super.paintComponent(g);
+    // legal random number generator
+    public int randomInlay(int x, int y, Cell[][] board) {
+
+        int num = randomNum() + 1;
+
+        if (impossible(board, x, y)) {
+
+            return -1;
+        }
+
+        while (!isLegal(x, y, board, num)) {
+
+            num = randomNum() + 1;
+        }
+
+        return num;
+    }
+
+
+    // Paint Component methods :
+
+    // draws the entire panel
+    public synchronized void paintComponent(Graphics g) {
+        
+        super.paintComponent(g);
         drawBoard(g);
         drawLines(g);
         drawCurrent(g);
 	}
-    //draws the entire panel
     
-    public synchronized void drawBoard(Graphics g)
-    {
-        for(int i = 0 ; i < 9 ; i++)
-        {
-            for(int j = 0 ; j < 9 ; j++)
-            {
+    // draws the cells
+    public synchronized void drawBoard(Graphics g) {
+
+        for(int i = 0 ; i < BOARDSIZE ; i++){
+
+            for(int j = 0 ; j < BOARDSIZE ; j++){
+
                 drawCell(g,i,j);
             }
         }
     }
-    //draws the cells
+    
+    // draws a cell
+    public void drawCell(Graphics g, int i, int j) {
 
-    public void drawCell(Graphics g,int i,int j)
-    {
         g.setColor(Color.darkGray);
-        g.fillOval(i * 60 ,j * 60 ,50,50);
+        g.fillOval(i * CELLSIZE, j * CELLSIZE , 50, 50);
 
-        if(board[j][i].num != 0)
-        {
+        if(board[j][i].num != 0){
+
             g.setColor(Color.WHITE);
-            g.drawString(board[j][i].num + "",i * 60 + 24,j * 60 + 30);
+            g.drawString(board[j][i].num + "",(i * CELLSIZE) + (CELLSIZE / 5 * 2)
+                , (j * CELLSIZE) + (CELLSIZE / 2));
         }
 
-        if((check)&&(!board[j][i].isPlaced))
-        {
-            if(board[j][i].num == solution[j][i].num)
-            {
+        if((check)&&(!board[j][i].isPlaced)){
+
+            if(board[j][i].num == solution[j][i].num){
+
                 g.setColor(Color.green);
             }
-            else if(board[j][i].num != 0) 
-            {
+            else if(board[j][i].num != 0) {
+
                 g.setColor(Color.red);
             }
             
             g.drawString(board[j][i].num + "",i * 60 + 24,j * 60 + 30);
         }
     }
-    //draws a cell
+    
+    // draws the lines between the cells
+    public void drawLines(Graphics g) {
 
-    public void drawLines(Graphics g)
-    {
         g.setColor(Color.DARK_GRAY);
 
-        for(int i = 0 ; i < 3 ; i++)
-        {
+        for(int i = 0 ; i < Math.sqrt(BOARDSIZE) ; i++){
+
             g.drawLine(i * 60 * 3 - 5, 0, i * 60 * 3 - 5, 530);
             g.drawLine(0, i * 60 * 3 - 5, 530,i * 60 * 3 - 5);
         }
     }
-    //draws the lines between the cells
+    
+    // draw a square around the current cell
+    public void drawCurrent(Graphics g) {
 
-    public void drawCurrent(Graphics g)
-    {
         g.setColor(Color.yellow);
         g.drawRect(Curry * 60 - 5, Currx * 60 - 5, 60, 60);
     }
-    //draw a square around the current cell
+    
 
-    public void keyPressed(KeyEvent e) 
-    {
+    // KeyListener methods implementation :
+
+    // key listener
+    public void keyPressed(KeyEvent e) {
+
         int i = e.getKeyCode();
         
-        if((i == KeyEvent.VK_1)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_1)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 1;
         }
 
-        if((i == KeyEvent.VK_2)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_2)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 2;
         }
 
-        if((i == KeyEvent.VK_3)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_3)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 3;
         }
 
-        if((i == KeyEvent.VK_4)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_4)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 4;
         }
 
-        if((i == KeyEvent.VK_5)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_5)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 5;
         }
 
-        if((i == KeyEvent.VK_6)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_6)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 6;
         }
 
-        if((i == KeyEvent.VK_7)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_7)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 7;
         }
 
-        if((i == KeyEvent.VK_8)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_8)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 8;
         }
 
-        if((i == KeyEvent.VK_9)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_9)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 9;
         }
 
-        if(i == KeyEvent.VK_UP)
-        {
-            if(Currx == 0)
-            {
+        if(i == KeyEvent.VK_UP){
+
+            if(Currx == 0){
+
                 Currx = 8;
             } 
             else Currx--;
         }
 
-        if(i == KeyEvent.VK_DOWN)
-        {
-            if(Currx == 8)
-            {
+        if(i == KeyEvent.VK_DOWN){
+
+            if(Currx == 8){
+
                 Currx = 0;
             } 
             else Currx++;
         }
 
-        if(i == KeyEvent.VK_LEFT)
-        {
-            if(Curry == 0)
-            {
+        if(i == KeyEvent.VK_LEFT){
+
+            if(Curry == 0){
+
                 Curry = 8;
             } 
             else Curry--;
         }
 
-        if(i == KeyEvent.VK_RIGHT)
-        {
-            if(Curry == 8)
-            {
+        if(i == KeyEvent.VK_RIGHT){
+
+            if(Curry == 8){
+
                 Curry = 0;
             } 
             else Curry++;
         }
 
-        if((i == KeyEvent.VK_C)&&(!board[Currx][Curry].isPlaced))
-        {
+        if((i == KeyEvent.VK_C)&&(!board[Currx][Curry].isPlaced)){
+
             board[Currx][Curry].num = 0;
         }
+
         repaint();
     }
-    //key listener
-
-    public void keyReleased(KeyEvent arg0) 
-    {
+    
+    // not used
+    public void keyReleased(KeyEvent arg0) {
 
     }
 
+    // not used
+    public void keyTyped(KeyEvent arg0) {
 
-    public void keyTyped(KeyEvent arg0) 
-    {
-
-    }  
+    }
 
 }

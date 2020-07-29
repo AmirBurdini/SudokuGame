@@ -1,76 +1,109 @@
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-public class Game extends JFrame
-{
-    Board gameBoard;
+public class Game extends JFrame implements Runnable {
+
+    Board gameBoard; // the board the game is played on
+    AutoSolver solver; // the game automatic solver
+
     int difficulty;
-    AutoSolver t;
+    int solverSpeed; // how fast the solver is displayed
+    boolean buttonPressed;
 
-    public Game(int difficulty)
-    {
+    public Game(int difficulty) {
+
         JButton Check = new JButton("Check");
         JButton AutoSolve = new JButton("Auto Solve");
         JPanel options = new JPanel();
+        JSlider solverSpeed = new JSlider(DEF.MIN_VELOCITY, DEF.MAX_VELOCITY);
 
-        Check.setSize(100,100);
         Check.setFocusable(false);
         Check.addActionListener(new CheckListener());
 
-        AutoSolve.setSize(100, 100);
         AutoSolve.setFocusable(false);
         AutoSolve.addActionListener(new AutoListener());
 
-        GridLayout g = new GridLayout(1,2);
+        solverSpeed.setFocusable(false);
+        solverSpeed.addChangeListener(new SpeedListener());
+
+        GridLayout g = new GridLayout(1, 3);
         options.setLayout(g);
         options.add(Check);
+        options.add(solverSpeed);
         options.add(AutoSolve);
 
+        buttonPressed = false;
         int NumofHoles = 0;
-        switch(difficulty)
-        {
-            case(1) : NumofHoles = 45;
-            case(2) : NumofHoles = 50;
-            case(3) : NumofHoles = 55;
-            case(4) : NumofHoles = 60;
+        switch (difficulty) {
+            case (1):
+                NumofHoles = 55;
+            case (2):
+                NumofHoles = 57;
+            case (3):
+                NumofHoles = 60;
+            case (4):
+                NumofHoles = 64;
         }
-        gameBoard = new Board(this,NumofHoles);
-        t = new AutoSolver(gameBoard,this);
+        
+        gameBoard = new Board(this, NumofHoles);
+        solver = new AutoSolver(gameBoard, this);
+        run();
 
-        this.add(gameBoard,BorderLayout.CENTER);
-        this.add(options,BorderLayout.SOUTH);
+        this.add(gameBoard, BorderLayout.CENTER);
+        this.add(options, BorderLayout.SOUTH);
 
         addKeyListener(gameBoard);
         setFocusable(true);
         setVisible(true);
-        setSize(550, 600);
+        setSize(DEF.GAME_HEIGHT, DEF.GAME_WIDTH);
         setLocation(410, 105);
 
     }
 
-    
-    private class CheckListener implements ActionListener
-    {
-        public void actionPerformed(ActionEvent e) 
-        {
-            if(Board.BoardSolved(gameBoard.board))
-            {
+    // listener to check all wrong/right fillings
+    private class CheckListener implements ActionListener {
+
+        public void actionPerformed(ActionEvent e) {
+
+            if (gameBoard.boardSolved(gameBoard.board)) {
+
                 setBackground(Color.green);
-            }
-            else gameBoard.check = !gameBoard.check;
+            } else
+                gameBoard.check = !gameBoard.check;
             repaint();
         }
-    
-    }  
-    //listener to check all wrong/right fillings
 
-    private class AutoListener implements ActionListener
-    {
-        public void actionPerformed(ActionEvent e) 
-        {
-            t.start();
+    }
+
+    // listener to run the Auto solver
+    private class AutoListener implements ActionListener {
+
+        public synchronized void actionPerformed(ActionEvent e) {
+
+            solver.pause = !solver.pause;
+        }
+
+    }
+
+    // listener to determine solver speed
+    private class SpeedListener implements ChangeListener {
+
+        // determines how fast the solver runs
+        public void stateChanged(ChangeEvent e) {
+
+            JSlider x = (JSlider) e.getSource();
+            DEF.SOLVER_VELOCITY = x.getValue();
         }
     }
-    //listener to run the Auto solver
+
+    // auxilary method, enables the run and pause of the solver
+    public synchronized void run() {
+        
+        solver.start();
+    }
 }
