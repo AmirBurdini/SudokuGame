@@ -5,12 +5,10 @@ import java.awt.event.ActionListener;
 
 public class Menu {
     
-    int difficulty;
     Game game;
 
     public Menu() {
 
-        difficulty = 0;
         JFrame mainFrame = new JFrame();
         JPanel options = new JPanel();
         JPanel radio = new JPanel();
@@ -48,8 +46,9 @@ public class Menu {
 
         newGame.addActionListener(new ActionListener() {
 
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent event) {
 
+                DEF.DIFFICULTY gameLevel = DEF.DIFFICULTY.EASY;
                 if (help.isSelected()) {
 
                     JFrame help = new JFrame("help");
@@ -62,24 +61,25 @@ public class Menu {
 
                     if (easy.isSelected()) {
 
-                        difficulty = 1;
+                        gameLevel = DEF.DIFFICULTY.EASY;
                     }
 
                     if (medium.isSelected()) {
 
-                        difficulty = 2;
+                        gameLevel = DEF.DIFFICULTY.MEDIUM;
                     }
 
                     if (hard.isSelected()) {
 
-                        difficulty = 3;
+                        gameLevel = DEF.DIFFICULTY.HARD;
                     }
 
                     if (insane.isSelected()) {
 
-                        difficulty = 4;
+                        gameLevel = DEF.DIFFICULTY.INSANE;
                     }
-                    game = new Game(difficulty);
+                    
+                    game = new Game(gameLevel);
                 }
             }
         });

@@ -1,3 +1,4 @@
+import java.util.Hashtable;
 import java.util.Random;
 import javax.swing.*;
 import java.awt.Color;
@@ -20,15 +21,21 @@ public class Board extends JPanel implements KeyListener,Output
     int Curry;
 
     boolean check;
+
+    Hashtable keyEvents;
+
     
     // constructor, empty board
-    public Board(Game g, int NumofHoles){
+    public Board(Game g, int NumofHoles) {
         
         Currx = 0; Curry = 0; 
         check = false;
 
         setBackground(Color.black);
         parent = g;
+
+        Hashtable keyEvents = new Hashtable<KeyEvent, Integer>();
+        fillKeyCodes();
 
         BorderLayout map = new BorderLayout();
         this.setLayout(map);
@@ -92,7 +99,7 @@ public class Board extends JPanel implements KeyListener,Output
 
         if (aux == null) {
             
-            board[x][y].Posibilities[num - 1] = false;
+            board[x][y].posibilities[num - 1] = false;
             return newBoard(x, y, board);
         } else board = aux;
         
@@ -278,7 +285,7 @@ public class Board extends JPanel implements KeyListener,Output
 
             for(int j = 0 ; j < BOARDSIZE ; j++){
 
-                board[i][j] = new Cell(parent.gameBoard, i, j);
+                board[i][j] = new Cell(i, j);
             } 
         }
     }
@@ -295,7 +302,7 @@ public class Board extends JPanel implements KeyListener,Output
 
                 for (int k = 0; k < BOARDSIZE; k++) {
 
-                    aux[i][j].Posibilities[k] = board[i][j].Posibilities[k];
+                    aux[i][j].posibilities[k] = board[i][j].posibilities[k];
                 }
             }
         }
@@ -418,97 +425,84 @@ public class Board extends JPanel implements KeyListener,Output
 
     // KeyListener methods implementation :
 
+    // fills HashTable with the keycode and value to perform
+    public void fillKeyCodes() {
+
+        keyEvents = new Hashtable<KeyEvent,Integer>();
+
+        keyEvents.put(KeyEvent.VK_1, 1);
+        keyEvents.put(KeyEvent.VK_2, 2);
+        keyEvents.put(KeyEvent.VK_3, 3);
+        keyEvents.put(KeyEvent.VK_4, 4);
+        keyEvents.put(KeyEvent.VK_5, 5);
+        keyEvents.put(KeyEvent.VK_6, 6);
+        keyEvents.put(KeyEvent.VK_7, 7);
+        keyEvents.put(KeyEvent.VK_8, 8);
+        keyEvents.put(KeyEvent.VK_9, 9);
+        keyEvents.put(KeyEvent.VK_C, 0);
+        keyEvents.put(KeyEvent.VK_UP, 10);
+        keyEvents.put(KeyEvent.VK_DOWN, 11);
+        keyEvents.put(KeyEvent.VK_LEFT, 12);
+        keyEvents.put(KeyEvent.VK_RIGHT, 13);
+    }
+
     // key listener
     public void keyPressed(KeyEvent e) {
 
         int i = e.getKeyCode();
-        
-        if((i == KeyEvent.VK_1)&&(!board[Currx][Curry].isPlaced)){
 
-            board[Currx][Curry].num = 1;
-        }
+        if (keyEvents.containsKey(i)) {
 
-        if((i == KeyEvent.VK_2)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 2;
-        }
-
-        if((i == KeyEvent.VK_3)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 3;
-        }
-
-        if((i == KeyEvent.VK_4)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 4;
-        }
-
-        if((i == KeyEvent.VK_5)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 5;
-        }
-
-        if((i == KeyEvent.VK_6)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 6;
-        }
-
-        if((i == KeyEvent.VK_7)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 7;
-        }
-
-        if((i == KeyEvent.VK_8)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 8;
-        }
-
-        if((i == KeyEvent.VK_9)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 9;
-        }
-
-        if(i == KeyEvent.VK_UP){
-
-            if(Currx == 0){
-
-                Currx = 8;
+            if (!board[Currx][Curry].isPlaced && (int) keyEvents.get(i) < 10) {
+                board[Currx][Curry].num = (int) keyEvents.get(i);
             } 
-            else Currx--;
+            
+            if ((int) keyEvents.get(i) > 9) {
+
+                switch ((int) keyEvents.get(i)) 
+                {
+                
+                    // UP
+                    case (10) : {
+                        if (Currx == 0) {
+
+                            Currx = 8;
+                        } else Currx--;  
+                        break;
+                    }
+
+                    // DOWN
+                    case (11) : {
+                        if (Currx == 8) {
+
+                            Currx = 0;
+                        } else Currx++;
+                        break;
+                    }
+
+                    // LEFT
+                    case (12) : {
+
+                        if(Curry == 0) {
+
+                            Curry = 8;
+                        } else Curry--;
+                        break;
+                    }
+                
+                    // RIGHT
+                    case (13) : {
+                        if(Curry == 8) {
+
+                            Curry = 0;
+                        } else Curry++;
+                        break;
+                    }
+                }
+
+            }
+            
         }
-
-        if(i == KeyEvent.VK_DOWN){
-
-            if(Currx == 8){
-
-                Currx = 0;
-            } 
-            else Currx++;
-        }
-
-        if(i == KeyEvent.VK_LEFT){
-
-            if(Curry == 0){
-
-                Curry = 8;
-            } 
-            else Curry--;
-        }
-
-        if(i == KeyEvent.VK_RIGHT){
-
-            if(Curry == 8){
-
-                Curry = 0;
-            } 
-            else Curry++;
-        }
-
-        if((i == KeyEvent.VK_C)&&(!board[Currx][Curry].isPlaced)){
-
-            board[Currx][Curry].num = 0;
-        }
-
         repaint();
     }
     

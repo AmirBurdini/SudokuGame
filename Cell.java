@@ -1,7 +1,8 @@
+import java.util.Arrays;
+
 public class Cell 
 {
-    Board parent; // parent board
-    boolean [] Posibilities; // if the cell is empty, what numbers could be in that cell
+    boolean [] posibilities; // if the cell is empty, what numbers could be in that cell
     boolean isPlaced; // is this cell empty?
     int num; // the number the cell contains
     
@@ -10,12 +11,12 @@ public class Cell
     int y;
     
     // constructor, empty Cell
-    public Cell(Board p, int x, int y){
+    public Cell(int x, int y){
         
         num = 0; 
-        Posibilities = new boolean[] {true,true,true,true,true,true,true,true,true};
+        posibilities = new boolean[9];
+        Arrays.fill(posibilities, true);
         isPlaced = false; 
-        parent = p;
         
         this.x = x;
         this.y = y;
@@ -38,7 +39,7 @@ public class Cell
     // is num possible in this cell?
     public boolean isPossible(int num){
         
-        return Posibilities[num - 1];
+        return posibilities[num - 1];
     }
     
     // returns true if no number is possible in this cell
@@ -46,7 +47,7 @@ public class Cell
 
         for(int i = 0 ; i < 9 ; i++)
         {
-            if(Posibilities[i])
+            if(posibilities[i])
             {
                 return false;
             }

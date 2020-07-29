@@ -51,7 +51,7 @@ public class AutoSolver extends Thread {
             } 
                
             try {
-                sleep(DEF.SOLVER_VELOCITY);
+                sleep(Game.SOLVER_VELOCITY);
             } catch (InterruptedException event) {
                 event.printStackTrace();
             }
@@ -110,7 +110,7 @@ public class AutoSolver extends Thread {
             aux = findSolution(x, y + 1, aux);
         }
         if (aux == null) {
-            board[x][y].Posibilities[num - 1] = false;
+            board[x][y].posibilities[num - 1] = false;
             return findSolution(x, y, board);
         } else board = aux;
 

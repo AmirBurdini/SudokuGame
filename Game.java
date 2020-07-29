@@ -8,19 +8,20 @@ import java.awt.event.ActionListener;
 
 public class Game extends JFrame implements Runnable {
 
+    static int SOLVER_VELOCITY = 100; // solver velocity default
+
     Board gameBoard; // the board the game is played on
     AutoSolver solver; // the game automatic solver
 
-    int difficulty;
     int solverSpeed; // how fast the solver is displayed
     boolean buttonPressed;
 
-    public Game(int difficulty) {
+    public Game(DEF.DIFFICULTY gameLevel) {
 
         JButton Check = new JButton("Check");
         JButton AutoSolve = new JButton("Auto Solve");
         JPanel options = new JPanel();
-        JSlider solverSpeed = new JSlider(DEF.MIN_VELOCITY, DEF.MAX_VELOCITY);
+        JSlider solverSpeed = new JSlider(DEF.MIN_VELOCITY,DEF.MAX_VELOCITY);
 
         Check.setFocusable(false);
         Check.addActionListener(new CheckListener());
@@ -39,14 +40,15 @@ public class Game extends JFrame implements Runnable {
 
         buttonPressed = false;
         int NumofHoles = 0;
-        switch (difficulty) {
-            case (1):
+        switch (gameLevel) {
+            
+            case EASY:
                 NumofHoles = 55;
-            case (2):
+            case MEDIUM:
                 NumofHoles = 57;
-            case (3):
+            case HARD:
                 NumofHoles = 60;
-            case (4):
+            case INSANE:
                 NumofHoles = 64;
         }
         
@@ -97,7 +99,7 @@ public class Game extends JFrame implements Runnable {
         public void stateChanged(ChangeEvent e) {
 
             JSlider x = (JSlider) e.getSource();
-            DEF.SOLVER_VELOCITY = x.getValue();
+            SOLVER_VELOCITY = x.getValue();
         }
     }
 

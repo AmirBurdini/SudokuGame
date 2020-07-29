@@ -6,10 +6,18 @@ public class DEF {
     // solver consts
     static final int MIN_VELOCITY = 5;
     static final int MAX_VELOCITY = 300;
-    static int SOLVER_VELOCITY = 100;
 
     // board consts
+    enum DIFFICULTY {
+        EASY,
+        MEDIUM,
+        HARD,
+        INSANE
+    }
+    
     static final int BOARD_SIZE = 9;
+    static final int BOARD_X_COORDIANTE = 410;
+    static final int BOARD_Y_COORDIANTE = 105;
 
     // cell consts
     static final int CELL_SIZE = 60;
